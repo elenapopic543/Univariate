@@ -1,0 +1,296 @@
+PUBPOL 543
+Deliverable 1: Univariate plot
+
+Note: The dataset used for this assignment was sourced from the US Government's open data repository: https://catalog.data.gov/
+
+Reading-in the data from the Github repository location:
+```{r}
+location='https://github.com/elenapopic543/Univariate/raw/main/'
+file='Data_Breach_Notifications_Affecting_Washington_Residents.csv'
+link=paste0(location,file)
+data1 <- read.csv(file=url(link), header=TRUE, stringsAsFactors=FALSE)
+```
+
+Examining the variables in the dataframe:
+```{r}
+names(data1)
+```
+Examining data types:
+```{r}
+str(data1,width = 70,strict.width='cut')
+```
+Examining raw values:
+```{r}
+head(data1$IndustryType,20) 
+```
+Creating a frequency table:
+```{r}
+absoluteT=table(data1$IndustryType,
+                exclude = 'nothing')
+absoluteT
+```
+Transforming the counts into proportions:
+```{r}
+prop.table(absoluteT)
+```
+Translating proportions into percents:
+```{r}
+propT=prop.table(absoluteT)*100
+propT
+```
+Turning the frequency table into a dataframe:
+```{r}
+(tableFreq=as.data.frame(absoluteT))
+```
+Renaming columns and adding percents:
+```{r}
+names(tableFreq)=c("Industry","Count")
+# adding percents:
+tableFreq$Percent=as.vector(propT)
+
+tableFreq
+```
+
+```{r}
+library(ggplot2)
+#Creating the base object:
+base = ggplot(data = tableFreq, 
+             aes(x = Industry,
+                 y = Count))
+#Adding layers to create default barplot:
+plot1 = base + geom_bar(fill ="gray",
+                        stat = 'identity') 
+plot1
+```
+Adding titles:
+```{r}
+titleText='Data Breach Incidents by Industry in WA, 2016-2022'
+sourceText='Source: DATA.GOV'
+
+plot2 = plot1 + labs(title=titleText,
+                     x =NULL, 
+                     y = NULL,
+                     caption = sourceText) 
+plot2
+```
+
+Using percent values instead of counts on Y-axis:
+```{r}
+base= ggplot(data = tableFreq, 
+             aes(x = Industry,
+                 y = Percent)) 
+
+plot1 = base + geom_bar(fill ="gray",
+                        stat = 'identity') 
+
+plot2 = plot1 + labs(title=titleText,
+                     x =NULL, 
+                     y = NULL,
+                     caption = sourceText)
+#Customizing the axes:
+library(scales) 
+plot3 = plot2 + scale_y_continuous(breaks=c(0,10,20,30,40,50),
+                                   limits = c(0,50), 
+                                   labels=unit_format(suffix = '%')) 
+plot3
+
+```
+Adding the actual percent values (rounded to two decimal places):
+```{r}
+paste0(round(tableFreq$Percent,2), '%')
+```
+```{r}
+LABELS=paste0(round(tableFreq$Percent,2), '%')
+
+plot4 = plot3 + geom_text(vjust=0, 
+                          size = 5,
+                          aes(y = Percent,
+                          label = LABELS))
+plot4
+```
+Ordering the bars by height:
+```{r}
+tableFreq=tableFreq[order(tableFreq$Percent),]
+tableFreq
+```
+Saving the order:
+```{r}
+(industriesOrd=tableFreq[order(tableFreq$Percent),'Industry'])
+```
+Finalizing the barplot:
+```{r}
+#Generating values for column labels
+LABELS = paste0(round(tableFreq$Percent,2), '%')
+#Specifying the base of the plot
+base = ggplot(data = tableFreq, 
+             aes(x = Industry,y = Percent)) 
+#Ordering the bars by height:
+base = base + scale_x_discrete(limits=industriesOrd) 
+#Changing the theme to classic
+base = base + theme_classic()
+#Adding layers to the base 
+plot1 = base + geom_bar(fill ="blue1",
+                        stat = 'identity') 
+#Adding title and caption
+plot2 = plot1 + labs(title=titleText,
+                     x =NULL, 
+                     y = NULL,
+                     caption = sourceText)
+#Customizing and labeling the values on the Y-axis with a % suffix:
+plot3 = plot2 + scale_y_continuous (breaks=c(0,10,20,30,40,50),
+                                   limits = c(0,50),
+                                   labels=unit_format(suffix = '%')) 
+#Moving the plot title to the center, and caption to left: 
+plot4 = plot3 + theme(plot.caption = element_text(hjust = 0),
+                      plot.title = element_text(hjust = 0.5))
+
+#Adding column labels
+plot5 = plot4 + geom_text(vjust=0, 
+                          size = 3.5,
+                          aes(y = Percent,
+                          label = LABELS))
+plot5
+```
+
+###
+Deliverable 2: Bivariate Plot
+In the following, We will explore the number of Washingtonians affected in data breaches by the type of the industry where data breach incidents occurred (i.e., perform a Categorical-Numerical bivariate relationship analysis)
+
+Summarizing the variable reflecting the number of people affected by the data breach:
+```{r}
+summary(data1$WashingtoniansAffected)
+```
+Excluding the missing values:
+```{r}
+#data1_nona=data1[complete.cases(data1),]
+```
+
+Getting the median of exposed residents for each industry type:
+```{r}
+aggregate(data=data1, WashingtoniansAffected~IndustryType,median)
+```
+Getting the mean of exposed residents for each industry type:
+```{r}
+aggregate(data=data1, WashingtoniansAffected~IndustryType,mean)
+```
+Checking other statistics:
+```{r}
+# using "summary" function
+tapply(data1$WashingtoniansAffected,
+       data1$IndustryType, summary)
+```
+The above summary statistics point out that half of the data breach incidents in each industry type are affecting from roughly 1400 to 2400 WA residents. The incidents with a large number of exposed people are less common in each industry type. We will reflect these findings in the following boxplot:
+
+```{r}
+library(ggpubr)
+
+base1=ggplot(data=data1[data1$WashingtoniansAffected>=1500,],
+            aes(x=IndustryType,y=WashingtoniansAffected)) 
+box1=base1 + geom_boxplot() + labs(title = "1.5k residents and above")
+
+base2=ggplot(data=data1_nona[data1$WashingtoniansAffected>=20000,],
+            aes(x=IndustryType,y=WashingtoniansAffected))
+box2=base2 + geom_boxplot() + labs(title = "20k residents and above")
+
+base3=ggplot(data=data1[data1$WashingtoniansAffected>=100000,],
+            aes(x=IndustryType,y=WashingtoniansAffected)) 
+box3=base3 + geom_boxplot() + labs(title = "100k residents and above")
+
+ggarrange(box1,box2,box3,ncol = 1)
+```
+
+Moving forward, we will focus our analysis on data breach incidents that affected 100k people or more.
+```{r}
+titleText2="Data breach incidents affecting over 100k residents (WA, 2016-2022)"
+base4=ggplot(data=data1[data1$WashingtoniansAffected>=100000,],
+            aes(x=IndustryType,y=WashingtoniansAffected)) 
+box4=base4 + geom_boxplot() +
+    labs(title = titleText2)
+box4 + coord_flip()
+```
+Reordering by the median value of incidents:
+```{r}
+base5=ggplot(data=data1[data1$WashingtoniansAffected>=100000,],
+            aes(x=reorder(IndustryType,
+                          WashingtoniansAffected,
+                          median),
+                y=WashingtoniansAffected)) 
+box5=base5 + geom_boxplot() + labs(title =titleText2) + scale_y_continuous (breaks=c(100000,500000,1000000,2000000,3000000),
+limits = c(0,4000000), 
+labels = c("100000","500000","1000000","2000000","3000000")) 
+
+box5  + coord_flip()
+```
+Creating a histogram:
+```{r}
+baseHY=ggplot(data=data1_nona,
+            aes(x=WashingtoniansAffected)) 
+histHY=baseHY + geom_histogram(aes(fill=IndustryType), 
+                              color='black') 
+histHY
+```
+```{r}
+#Adding facets and further customizing the axes of the plot:
+baseHY=ggplot(data=data1_nona,
+            aes(x=WashingtoniansAffected)) 
+histHY=baseHY + geom_histogram(aes(fill=IndustryType), 
+                              color='black') 
+
+histHY + facet_grid(~IndustryType)
+```
+Alternative:
+```{r}
+histHY + facet_grid(IndustryType~.) + guides(fill="none")
+```
+Creating a mean-error plot:
+```{r}
+data1_nona[,c('IndustryType', 'WashingtoniansAffected')] %>%head(20)
+```
+```{r}
+library(lattice)
+library(plyr)
+
+```
+```{r}
+install.packages(Rmisc, dependencies=TRUE)
+```
+
+```{r}
+Rmisc::group.CI(data=data1,
+          WashingtoniansAffected~IndustryType)
+```
+```{r}
+baseMEANs=ggplot(data1, aes(x=IndustryType,
+                             y=WashingtoniansAffected)) +
+        theme_classic()
+pointMEANS=baseMEANs + stat_summary(fun = mean, 
+                                    geom = "point")
+pointMEANS 
+```
+Adding an error-bar:
+```{r}
+pointErrors=pointMEANS + stat_summary(fun.data = mean_ci,
+                                      geom = "errorbar") 
+pointErrors
+```
+Including the data in a plot:
+```{r}
+BarJit=pointErrors + geom_jitter(colour="darkseagreen4",
+                             alpha=0.2 #transparency
+                             )
+BarJit
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
