@@ -188,7 +188,7 @@ base1=ggplot(data=data1[data1$WashingtoniansAffected>=1500,],
             aes(x=IndustryType,y=WashingtoniansAffected)) 
 box1=base1 + geom_boxplot() + labs(title = "1.5k residents and above")
 
-base2=ggplot(data=data1_nona[data1$WashingtoniansAffected>=20000,],
+base2=ggplot(data=data1[data1$WashingtoniansAffected>=20000,],
             aes(x=IndustryType,y=WashingtoniansAffected))
 box2=base2 + geom_boxplot() + labs(title = "20k residents and above")
 
@@ -223,18 +223,25 @@ box5  + coord_flip()
 ```
 Creating a histogram:
 ```{r}
-baseHY=ggplot(data=data1_nona,
+baseHY=ggplot(data=data1[data1$WashingtoniansAffected>=100000,],
             aes(x=WashingtoniansAffected)) 
 histHY=baseHY + geom_histogram(aes(fill=IndustryType), 
-                              color='black') 
+                              color='black') + 
+  scale_x_continuous(breaks=c(100000,500000,1000000,2000000,3000000),
+limits = c(0,4000000), 
+labels = c("100000","500000","1000000","2000000","3000000")) + labs(title =titleText2)
+
 histHY
 ```
 ```{r}
 #Adding facets and further customizing the axes of the plot:
-baseHY=ggplot(data=data1_nona,
+baseHY=ggplot(data=data1[data1$WashingtoniansAffected>=100000,],
             aes(x=WashingtoniansAffected)) 
 histHY=baseHY + geom_histogram(aes(fill=IndustryType), 
-                              color='black') 
+                              color='black') + labs(title =titleText2) +
+scale_x_continuous(breaks=c(100000,500000,1000000,2000000,3000000),
+limits = c(0,4000000), 
+labels = c("100000","500000","1000000","2000000","3000000")) 
 
 histHY + facet_grid(~IndustryType)
 ```
@@ -244,15 +251,11 @@ histHY + facet_grid(IndustryType~.) + guides(fill="none")
 ```
 Creating a mean-error plot:
 ```{r}
-data1_nona[,c('IndustryType', 'WashingtoniansAffected')] %>%head(20)
+data1[,c('IndustryType', 'WashingtoniansAffected')] %>%head(20)
 ```
 ```{r}
 library(lattice)
 library(plyr)
-
-```
-```{r}
-install.packages(Rmisc, dependencies=TRUE)
 ```
 
 ```{r}
